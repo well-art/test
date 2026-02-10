@@ -1,5 +1,5 @@
 import React from 'react';
-import { BookOpen, GitGraph, FileText, Search, LayoutGrid } from 'lucide-react';
+import { BookOpen, GitBranch, FileText, Search, LayoutGrid } from 'lucide-react';
 import { MainCategory } from '../types';
 
 interface NavbarProps {
@@ -13,7 +13,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate, onSearc
   
   const navItems = [
     { id: 'regulations' as const, label: '規章制度', icon: BookOpen },
-    { id: 'flowcharts' as const, label: '粒子流程表', icon: GitGraph },
+    { id: 'flowcharts' as const, label: '粒子流程表', icon: GitBranch },
     { id: 'forms' as const, label: '共用表格', icon: FileText },
   ];
 

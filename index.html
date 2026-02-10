@@ -2,17 +2,57 @@
 <html lang="zh-TW">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>企業知識庫中心</title>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Babel for in-browser JSX transformation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Tailwind Configuration -->
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              enterprise: {
+                green: '#24a145',
+                dark: '#595656',
+                light: '#e9f5ec',
+              }
+            },
+            animation: {
+              blob: "blob 7s infinite",
+              'fade-in-up': 'fadeInUp 0.5s ease-out forwards',
+            },
+            keyframes: {
+              blob: {
+                "0%": { transform: "translate(0px, 0px) scale(1)" },
+                "33%": { transform: "translate(30px, -50px) scale(1.1)" },
+                "66%": { transform: "translate(-20px, 20px) scale(0.9)" },
+                "100%": { transform: "translate(0px, 0px) scale(1)" },
+              },
+              fadeInUp: {
+                '0%': { opacity: '0', transform: 'translateY(10px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' },
+              }
+            },
+          },
+        },
+      }
+    </script>
+
     <style>
       body {
         font-family: 'Noto Sans TC', sans-serif;
         background-color: #f3f4f6;
       }
-      /* Custom scrollbar for better aesthetics */
+      /* Custom scrollbar */
       ::-webkit-scrollbar {
         width: 8px;
         height: 8px;
@@ -31,16 +71,455 @@
   <script type="importmap">
 {
   "imports": {
+    "react": "https://esm.sh/react@^19.2.4",
     "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
     "react/": "https://esm.sh/react@^19.2.4/",
-    "react": "https://esm.sh/react@^19.2.4"
+    "lucide-react": "https://esm.sh/lucide-react@^0.563.0"
   }
 }
 </script>
 </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
+
+    <script type="text/babel" data-type="module">
+      import React, { useState, useEffect, useMemo } from 'https://esm.sh/react@18.2.0';
+      import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
+      import { 
+        Lock, ArrowRight, ShieldCheck, 
+        BookOpen, GitBranch, FileText, Search, LayoutGrid,
+        X, Download, ExternalLink, FolderOpen, ChevronRight 
+      } from 'https://esm.sh/lucide-react@0.263.1';
+
+      // --- Constants & Data ---
+      const generateItems = (count, prefix) => {
+        return Array.from({ length: count }).map((_, i) => ({
+          id: `${prefix}-${i}`,
+          title: `${prefix} - 文件範例 ${i + 1}`,
+          date: `2023-${10 + (i % 2)}-${10 + i}`,
+          type: i % 3 === 0 ? 'pdf' : i % 3 === 1 ? 'doc' : 'sheet',
+        }));
+      };
+
+      const REGULATIONS_DATA = {
+        id: 'regulations',
+        title: '規章制度',
+        groups: [
+          { name: '組織系列', items: generateItems(4, '組織架構與職掌') },
+          { name: '技術系列', items: generateItems(5, '技術研發規範') },
+          { name: '財務系列', items: generateItems(3, '財務報銷準則') },
+          { name: '行銷系列', items: generateItems(4, '品牌識別手冊') },
+          { name: '品格系列', items: generateItems(2, '員工行為準則') },
+        ],
+      };
+
+      const FLOWCHARTS_DATA = {
+        id: 'flowcharts',
+        title: '粒子流程表',
+        groups: [
+          { name: '一部門', items: generateItems(3, '業務開發流程') },
+          { name: '二部門', items: generateItems(3, '專案執行SOP') },
+          { name: '三部門', items: generateItems(3, '採購驗收流程') },
+          { name: '四部門', items: generateItems(3, '客戶服務流程') },
+          { name: '五部門', items: generateItems(3, '資訊安全稽核') },
+          { name: '六部門', items: generateItems(3, '教育訓練規劃') },
+          { name: '七部門', items: generateItems(3, '後勤支援作業') },
+        ],
+      };
+
+      const FORMS_DATA = {
+        id: 'forms',
+        title: '共用表格',
+        groups: [
+          { name: '人事相關', items: generateItems(5, '請假單/加班單') },
+          { name: '公關相關', items: generateItems(3, '公關禮品申請') },
+          { name: '文書檔案', items: generateItems(4, '用印申請書') },
+          { name: '印鑑相關', items: generateItems(2, '印鑑使用登記') },
+          { name: '財務相關', items: generateItems(6, '費用請款單') },
+          { name: '管理相關', items: generateItems(3, '資產異動單') },
+          { name: '穩盈相關', items: generateItems(3, '投資評估表') },
+        ],
+      };
+
+      const ALL_DATA = [REGULATIONS_DATA, FLOWCHARTS_DATA, FORMS_DATA];
+
+      // --- Components ---
+
+      // Login Component
+      const Login = ({ onLogin }) => {
+        const [password, setPassword] = useState('');
+        const [error, setError] = useState(false);
+        const [isVisible, setIsVisible] = useState(false);
+
+        useEffect(() => {
+          const timer = setTimeout(() => setIsVisible(true), 100);
+          return () => clearTimeout(timer);
+        }, []);
+
+        const handleSubmit = (e) => {
+          e.preventDefault();
+          if (password === '2693988') {
+            onLogin();
+          } else {
+            setError(true);
+            setPassword('');
+          }
+        };
+
+        return (
+          <div className="min-h-screen flex items-center justify-center bg-gray-100 relative overflow-hidden">
+            <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-enterprise-green rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
+            <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-enterprise-dark rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+
+            <div className={`bg-white p-10 rounded-2xl shadow-2xl w-full max-w-md transform transition-all duration-1000 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+              <div className="flex justify-center mb-8">
+                <div className="bg-enterprise-light p-4 rounded-full">
+                  <ShieldCheck className="w-12 h-12 text-enterprise-green" />
+                </div>
+              </div>
+              
+              <h2 className="text-3xl font-bold text-center text-enterprise-dark mb-2">企業知識庫中心</h2>
+              <p className="text-center text-gray-400 mb-8 text-sm">Enterprise Knowledge Base Center</p>
+
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">訪問密碼</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Lock className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <input
+                      type="password"
+                      className={`block w-full pl-10 pr-3 py-3 border ${error ? 'border-red-500 ring-red-500' : 'border-gray-300 focus:ring-enterprise-green focus:border-enterprise-green'} rounded-lg shadow-sm focus:outline-none focus:ring-2 sm:text-sm transition-all`}
+                      placeholder="請輸入密碼"
+                      value={password}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        setError(false);
+                      }}
+                    />
+                  </div>
+                  {error && <p className="mt-2 text-sm text-red-600">密碼錯誤，請重試。</p>}
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-enterprise-green hover:bg-[#1e8a3b] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-enterprise-green transition-colors duration-200"
+                >
+                  登入系統
+                  <ArrowRight className="ml-2 w-4 h-4" />
+                </button>
+              </form>
+            </div>
+          </div>
+        );
+      };
+
+      // Navbar Component
+      const Navbar = ({ currentView, onNavigate, onSearchChange, searchQuery }) => {
+        const navItems = [
+          { id: 'regulations', label: '規章制度', icon: BookOpen },
+          { id: 'flowcharts', label: '粒子流程表', icon: GitBranch },
+          { id: 'forms', label: '共用表格', icon: FileText },
+        ];
+
+        return (
+          <nav className="bg-enterprise-green shadow-lg sticky top-0 z-40">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex items-center justify-between h-16">
+                
+                <div className="flex items-center flex-shrink-0 cursor-pointer" onClick={() => onNavigate('regulations')}>
+                  <div className="bg-white p-1.5 rounded-lg mr-2">
+                    <LayoutGrid className="h-6 w-6 text-enterprise-green" />
+                  </div>
+                  <span className="font-bold text-xl text-enterprise-green tracking-wide">EKB Center</span>
+                </div>
+
+                <div className="hidden md:block">
+                  <div className="ml-10 flex items-baseline space-x-4">
+                    {navItems.map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => onNavigate(item.id)}
+                        className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
+                          currentView === item.id
+                            ? 'bg-[#1e8a3b] text-white shadow-inner'
+                            : 'text-white hover:bg-[#34b457]'
+                        }`}
+                      >
+                        <item.icon className="w-4 h-4 mr-2" />
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center">
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Search className="h-4 w-4 text-gray-300" />
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="搜尋文件..."
+                      value={searchQuery}
+                      onChange={(e) => {
+                        onSearchChange(e.target.value);
+                        if (e.target.value && currentView !== 'search') {
+                          onNavigate('search');
+                        }
+                      }}
+                      className="bg-[#1e8a3b] text-white placeholder-gray-300 border-none ring-0 focus:ring-2 focus:ring-white/50 rounded-full pl-10 pr-4 py-1.5 text-sm transition-all w-48 focus:w-64"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Mobile Nav */}
+            <div className="md:hidden flex justify-around bg-[#1e8a3b] py-2">
+               {navItems.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => onNavigate(item.id)}
+                    className={`flex flex-col items-center px-2 py-1 rounded text-xs font-medium ${
+                       currentView === item.id ? 'text-white bg-black/10' : 'text-green-100'
+                    }`}
+                  >
+                    <item.icon className="w-5 h-5 mb-1" />
+                    {item.label}
+                  </button>
+                ))}
+            </div>
+          </nav>
+        );
+      };
+
+      // Document Modal Component
+      const DocumentModal = ({ document, onClose }) => {
+        if (!document) return null;
+
+        return (
+          <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+            <div className="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity backdrop-blur-sm" onClick={onClose}></div>
+
+            <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+              <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+              <div className="relative inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
+                
+                <div className="bg-enterprise-dark px-4 py-3 sm:px-6 flex justify-between items-center">
+                  <h3 className="text-lg leading-6 font-medium text-white flex items-center" id="modal-title">
+                    <FileText className="mr-2 h-5 w-5" />
+                    {document.title}
+                  </h3>
+                  <button type="button" className="bg-transparent rounded-md text-gray-200 hover:text-white focus:outline-none" onClick={onClose}>
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+
+                <div className="bg-gray-100 px-4 py-4 sm:px-6 h-[60vh] flex flex-col items-center justify-center">
+                   <div className="w-full h-full bg-white border border-gray-300 shadow-inner flex flex-col items-center justify-center rounded-md relative overflow-hidden group">
+                      <img src={`https://picsum.photos/seed/${document.id}/800/600`} alt="Document Preview" className="absolute inset-0 w-full h-full object-cover opacity-10 blur-[1px]" />
+                      <div className="z-10 text-center p-8 bg-white/90 rounded-xl shadow-lg">
+                          <img src="https://upload.wikimedia.org/wikipedia/commons/d/da/Google_Drive_logo_%282020%29.svg" alt="Google Drive" className="w-16 h-16 mx-auto mb-4"/>
+                          <h4 className="text-xl font-semibold text-gray-800 mb-2">Google Drive Preview</h4>
+                          <p className="text-gray-500 text-sm mb-4">
+                              此為文件預覽區域。<br/>
+                              實際應用時，此處將嵌入 Google Doc/Drive iframe。
+                          </p>
+                          <div className="text-xs text-gray-400 font-mono bg-gray-50 px-2 py-1 rounded">
+                              ID: {document.id} | TYPE: {document.type.toUpperCase()}
+                          </div>
+                      </div>
+                   </div>
+                </div>
+
+                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-gray-200">
+                  <button type="button" className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-enterprise-green text-base font-medium text-white hover:bg-[#1e8a3b] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-enterprise-green sm:ml-3 sm:w-auto sm:text-sm items-center transition-colors" onClick={() => alert(`正在下載 ${document.title}.pdf ...`)}>
+                    <Download className="w-4 h-4 mr-2" />
+                    下載 PDF
+                  </button>
+                  <button type="button" className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-enterprise-dark sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm items-center transition-colors" onClick={() => window.open(`https://docs.google.com/viewer?q=${document.title}`, '_blank')}>
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    線上閱讀
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      // Main App Component
+      const App = () => {
+        const [isLoggedIn, setIsLoggedIn] = useState(false);
+        const [currentView, setCurrentView] = useState('regulations');
+        const [searchQuery, setSearchQuery] = useState('');
+        const [selectedDoc, setSelectedDoc] = useState(null);
+
+        const currentData = useMemo(() => {
+          switch (currentView) {
+            case 'regulations': return REGULATIONS_DATA;
+            case 'flowcharts': return FLOWCHARTS_DATA;
+            case 'forms': return FORMS_DATA;
+            default: return undefined;
+          }
+        }, [currentView]);
+
+        const searchResults = useMemo(() => {
+          if (currentView !== 'search' || !searchQuery.trim()) return [];
+          
+          const results = [];
+          ALL_DATA.forEach(section => {
+            section.groups.forEach(group => {
+              group.items.forEach(item => {
+                if (item.title.toLowerCase().includes(searchQuery.toLowerCase())) {
+                  results.push({
+                    groupName: group.name,
+                    item,
+                    category: section.title
+                  });
+                }
+              });
+            });
+          });
+          return results;
+        }, [currentView, searchQuery]);
+
+        if (!isLoggedIn) {
+          return <Login onLogin={() => setIsLoggedIn(true)} />;
+        }
+
+        return (
+          <div className="min-h-screen bg-gray-50 flex flex-col">
+            <Navbar 
+              currentView={currentView} 
+              onNavigate={(view) => {
+                setCurrentView(view);
+                if (view !== 'search') setSearchQuery('');
+              }}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+            />
+
+            <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+              <div className="mb-8">
+                <h1 className="text-3xl font-bold text-enterprise-dark flex items-center">
+                  {currentView === 'search' ? (
+                    <>
+                      <Search className="mr-3 text-enterprise-green" />
+                      搜尋結果
+                    </>
+                  ) : (
+                    <>
+                      <FolderOpen className="mr-3 text-enterprise-green" />
+                      {currentData?.title}
+                    </>
+                  )}
+                </h1>
+                <div className="h-1 w-20 bg-enterprise-green mt-2 rounded-full"></div>
+              </div>
+
+              <div className="space-y-8 animate-fade-in-up">
+                {currentView !== 'search' && currentData && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {currentData.groups.map((group) => (
+                      <div key={group.name} className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 border border-gray-100">
+                        <div className="bg-gray-50 px-5 py-3 border-b border-gray-200 flex items-center justify-between">
+                          <h3 className="text-lg font-semibold text-enterprise-dark">{group.name}</h3>
+                          <span className="text-xs font-medium bg-green-100 text-enterprise-green px-2 py-0.5 rounded-full">
+                            {group.items.length} 份文件
+                          </span>
+                        </div>
+                        <ul className="divide-y divide-gray-100">
+                          {group.items.map((item) => (
+                            <li 
+                              key={item.id} 
+                              className="px-5 py-3 hover:bg-[#f0f9f1] cursor-pointer transition-colors group flex items-center justify-between"
+                              onClick={() => setSelectedDoc(item)}
+                            >
+                              <div className="flex items-center space-x-3 overflow-hidden">
+                                  <div className={`p-1.5 rounded-md ${
+                                      item.type === 'pdf' ? 'bg-red-50 text-red-500' :
+                                      item.type === 'doc' ? 'bg-blue-50 text-blue-500' :
+                                      'bg-green-50 text-green-500'
+                                  }`}>
+                                      <FileText className="w-4 h-4" />
+                                  </div>
+                                  <div className="truncate">
+                                      <p className="text-sm font-medium text-gray-700 group-hover:text-enterprise-green transition-colors truncate">
+                                          {item.title}
+                                      </p>
+                                      <p className="text-xs text-gray-400">{item.date}</p>
+                                  </div>
+                              </div>
+                              <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-enterprise-green" />
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {currentView === 'search' && (
+                   <div className="bg-white rounded-xl shadow-md overflow-hidden min-h-[50vh]">
+                      {searchResults.length > 0 ? (
+                        <ul className="divide-y divide-gray-200">
+                          {searchResults.map((result, idx) => (
+                            <li 
+                              key={`${result.item.id}-${idx}`} 
+                              className="px-6 py-4 hover:bg-gray-50 cursor-pointer transition-colors flex items-center justify-between"
+                              onClick={() => setSelectedDoc(result.item)}
+                            >
+                               <div className="flex items-center">
+                                  <div className="bg-gray-100 p-2 rounded-lg mr-4 text-gray-500">
+                                      <FileText className="w-5 h-5" />
+                                  </div>
+                                  <div>
+                                      <h4 className="text-base font-semibold text-gray-800">{result.item.title}</h4>
+                                      <div className="flex items-center text-sm text-gray-500 mt-1 space-x-2">
+                                          <span className="bg-gray-100 px-2 py-0.5 rounded text-xs">{result.category}</span>
+                                          <span>&bull;</span>
+                                          <span className="text-xs">{result.groupName}</span>
+                                          <span>&bull;</span>
+                                          <span className="text-xs">{result.item.date}</span>
+                                      </div>
+                                  </div>
+                               </div>
+                               <button className="text-enterprise-green text-sm font-medium hover:underline">查看</button>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+                          <Search className="w-12 h-12 mb-4 text-gray-200" />
+                          <p className="text-lg">找不到相關文件</p>
+                          <p className="text-sm">請嘗試其他關鍵字</p>
+                        </div>
+                      )}
+                   </div>
+                )}
+              </div>
+            </main>
+            
+            <footer className="bg-white border-t border-gray-200 py-6 mt-auto">
+              <div className="max-w-7xl mx-auto px-4 text-center text-gray-400 text-sm">
+                  <p>&copy; {new Date().getFullYear()} Enterprise Knowledge Base Center. Internal Use Only.</p>
+              </div>
+            </footer>
+
+            <DocumentModal 
+              document={selectedDoc} 
+              onClose={() => setSelectedDoc(null)} 
+            />
+          </div>
+        );
+      };
+
+      const root = createRoot(document.getElementById('root'));
+      root.render(<App />);
+    </script>
   </body>
 </html>
